@@ -1,0 +1,12 @@
+{
+  "name": "RuangEksponen",
+  "short_name": "Eksponen",
+  "description": "Belajar bilangan berpangkat dengan cara yang menyenangkan.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f8ff",
+  "theme_color": "#f6f8ff",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
