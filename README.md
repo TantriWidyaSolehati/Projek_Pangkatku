@@ -2,6 +2,12 @@
 
 Website pembelajaran interaktif untuk materi bilangan berpangkat bulat positif dan negatif. Frontend React/Vite, API tutor FastAPI, dan Supabase Auth/PostgreSQL/Realtime dikonfigurasi terpisah.
 
+## Game, kuis, contoh, dan musik
+
+Setelah masuk, buka **Game Eksponen**, **Kuis Eksponen**, atau **Contoh soal** dari navigasi samping. Game menyediakan tantangan bertimer, pencocokan soal-hasil, misi berlevel, dan soal acak. Kuis berisi 12 soal acak beserta pembahasan; contoh soal dapat dibuka langkah demi langkah.
+
+Musik belajar adalah melodi sintetis orisinal yang dibuat di browser, tidak memakai rekaman eksternal, dan hanya berjalan setelah tombol putar ditekan. Efek suara juga nonaktif secara default. Skor kuis hanya berlaku untuk sesi tersebut; progres misi disimpan lokal per akun pada perangkat yang digunakan. Keduanya tidak dikirim ke Supabase dan bukan nilai akademik resmi.
+
 ## Konfigurasi Supabase
 
 1. Pastikan `frontend/.env.local` memiliki `VITE_SUPABASE_URL` berupa **Project URL** dasar (contoh `https://<project-ref>.supabase.co`) dan `VITE_SUPABASE_ANON_KEY` berupa publishable key atau anon key. Jangan tambahkan `/rest/v1` atau `/auth/v1`.

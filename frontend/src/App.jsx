@@ -1,16 +1,21 @@
 import { Navigate, NavLink, Outlet, Route, Routes, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Activity, BookOpen, Bot, ChevronRight, CircleHelp, Compass, GraduationCap,
-  LayoutDashboard, LogOut, Menu, MessageCircle, PenLine, Sparkles, UserRound, X,
+  Activity, BookOpen, BookOpenCheck, Bot, ChevronRight, CircleHelp, ClipboardList, Compass,
+  Gamepad2, GraduationCap, LayoutDashboard, LogOut, Menu, MessageCircle, PenLine,
+  Sparkles, UserRound, X,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "./contexts/AuthContext.jsx";
+import MusicPlayer from "./components/MusicPlayer.jsx";
 import { AuthPage, LandingPage } from "./pages/public.jsx";
 import { DashboardPage, LessonsPage, VisualizationPage } from "./pages/learning.jsx";
 import { ExercisesPage, ReflectionPage } from "./pages/practice.jsx";
 import { DiscussionsPage, TutorPage } from "./pages/community.jsx";
 import { ProfilePage } from "./pages/profile.jsx";
+import { GamesPage } from "./pages/games.jsx";
+import { QuizPage } from "./pages/quiz.jsx";
+import { ExamplesPage } from "./pages/examples.jsx";
 
 const navigation = [
   { to: "/app", label: "Beranda", icon: LayoutDashboard, end: true },
@@ -18,6 +23,9 @@ const navigation = [
   { to: "/app/lessons", label: "Materi utama", icon: BookOpen },
   { to: "/app/visualization", label: "Visualisasi", icon: Activity },
   { to: "/app/exercises", label: "Latihan soal", icon: PenLine },
+  { to: "/app/games", label: "Game Eksponen", icon: Gamepad2 },
+  { to: "/app/quiz", label: "Kuis Eksponen", icon: ClipboardList },
+  { to: "/app/examples", label: "Contoh soal", icon: BookOpenCheck },
   { to: "/app/reflection", label: "Refleksi", icon: Sparkles },
   { to: "/app/discussions", label: "Ruang diskusi", icon: MessageCircle },
   { to: "/app/tutor", label: "AI Tutor", icon: Bot },
@@ -68,7 +76,7 @@ function AppLayout() {
         <header className="topbar">
           <button className="icon-button mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Buka menu"><Menu size={21} /></button>
           <div className="breadcrumb"><GraduationCap size={17} /><span>Matematika SMP</span><span className="breadcrumb-divider">/</span><strong>Bilangan Berpangkat</strong></div>
-          <div className="topbar-actions"><span className="online-indicator"><i /> Ruang belajarmu</span><button className="icon-button logout-button" onClick={handleSignOut} title="Keluar"><LogOut size={18} /></button></div>
+          <div className="topbar-actions"><MusicPlayer userId={user.id} /><span className="online-indicator"><i /> Ruang belajarmu</span><button className="icon-button logout-button" onClick={handleSignOut} title="Keluar"><LogOut size={18} /></button></div>
         </header>
         <main className="page-content"><Outlet /></main>
         <footer className="footer-note">Dibuat untuk belajar dengan tenang <span>✦</span> RuangEksponen</footer>
@@ -109,6 +117,9 @@ export default function App() {
           <Route path="lessons" element={<LessonsPage />} />
           <Route path="visualization" element={<VisualizationPage />} />
           <Route path="exercises" element={<ExercisesPage />} />
+          <Route path="games" element={<GamesPage />} />
+          <Route path="quiz" element={<QuizPage />} />
+          <Route path="examples" element={<ExamplesPage />} />
           <Route path="reflection" element={<ReflectionPage />} />
           <Route path="discussions" element={<DiscussionsPage />} />
           <Route path="tutor" element={<TutorPage />} />
