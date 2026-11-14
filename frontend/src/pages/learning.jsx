@@ -15,7 +15,7 @@ import { Notice, PageIntro, useRemote } from "./shared.jsx";
 export function DashboardPage() {
   const { user, profile } = useAuth();
   const progressState = useRemote(() => listProgress(user.id), [user.id]);
-  const attemptState = useRemote(() => listAttempts(user.id), [user.id]);
+  const attemptState = useRemote(() => listAttempts(), [user.id]);
   const progress = progressState.data ?? [];
   const attempts = attemptState.data ?? [];
   const completed = progress.filter((item) => item.completion_status === "completed").length;
@@ -33,7 +33,7 @@ export function DashboardPage() {
       </section>
       <div className="dashboard-columns"><section className="content-card continue-card"><div className="card-title-row"><div><span className="eyebrow">MATERI UTAMA</span><h3>Pangkat negatif</h3></div><span className="card-mini-icon">x<sup>−n</sup></span></div><p>Yuk pahami mengapa pangkat negatif berarti kebalikan, bukan bilangan negatif.</p><div className="lesson-card-footer"><span><Clock3 size={14} /> 9 menit</span><Link to="/app/lessons">Buka materi <ArrowRight size={15} /></Link></div></section>
         <section className="content-card activity-card"><div className="card-title-row"><div><span className="eyebrow">LATIHAN TERAKHIR</span><h3>Aktivitasmu</h3></div><Link to="/app/exercises" className="icon-link" aria-label="Buka latihan"><ArrowUpRight size={18} /></Link></div>
-          {attemptState.busy ? <div className="small-loading">Memuat aktivitas...</div> : latest.length ? <div className="activity-list">{latest.map((attempt) => <div className="activity-item" key={attempt.id}><span className={`activity-check ${attempt.score ? "correct" : "incorrect"}`}>{attempt.score ? <Check size={13} /> : <X size={13} />}</span><span><strong>Latihan {attempt.exercise_id}</strong><small>{new Date(attempt.created_at).toLocaleDateString("id-ID")}</small></span><b>{attempt.score ? "Benar" : "Coba lagi"}</b></div>)}</div> : <div className="empty-inline"><CircleHelp size={18} /><span>Belum ada latihan. Yuk, coba soal pertamamu!</span></div>}
+          {attemptState.busy ? <div className="small-loading">Memuat aktivitas...</div> : latest.length ? <div className="activity-list">{latest.map((attempt) => <div className="activity-item" key={attempt.id}><span className={`activity-check ${attempt.is_correct ? "correct" : "incorrect"}`}>{attempt.is_correct ? <Check size={13} /> : <X size={13} />}</span><span><strong>Latihan {attempt.exercise_id}</strong><small>{new Date(attempt.created_at).toLocaleDateString("id-ID")}</small></span><b>{attempt.is_correct ? "Benar" : "Coba lagi"}</b></div>)}</div> : <div className="empty-inline"><CircleHelp size={18} /><span>Belum ada latihan. Yuk, coba soal pertamamu!</span></div>}
         </section></div>
       <section className="quick-links"><Link to="/app/visualization"><span className="quick-icon quick-purple"><Activity size={19} /></span><span><strong>Lihat pola eksponen</strong><small>Visualisasi interaktif</small></span><ChevronRight size={17} /></Link><Link to="/app/tutor"><span className="quick-icon quick-blue"><Sparkles size={19} /></span><span><strong>Tanya AI Tutor</strong><small>Belajar dengan petunjuk</small></span><ChevronRight size={17} /></Link></section>
     </motion.div>

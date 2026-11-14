@@ -9,7 +9,7 @@ import { Notice, PageIntro, useRemote } from "./shared.jsx";
 const difficultyOrder = ["Mudah", "Sedang", "Sulit"];
 export function ExercisesPage() {
   const { user } = useAuth();
-  const attemptsState = useRemote(() => listAttempts(user.id), [user.id]);
+  const attemptsState = useRemote(() => listAttempts(), [user.id]);
   const [level, setLevel] = useState("Mudah");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -22,18 +22,18 @@ export function ExercisesPage() {
   const question = levelQuestions[questionIndex % Math.max(levelQuestions.length, 1)];
   useEffect(() => {
     if (!attemptsState.data?.length) return;
-    const recent = attemptsState.data.slice(0, 3).map((item) => item.score);
-    if (recent.length >= 2 && recent.filter((score) => score === 0).length >= 2) setLevel("Mudah");
-    else if (recent.length === 3 && recent.every((score) => score > 0)) setLevel("Sulit");
+    const recent = attemptsState.data.slice(0, 3).map((item) => item.is_correct);
+    if (recent.length >= 2 && recent.filter((isCorrect) => !isCorrect).length >= 2) setLevel("Mudah");
+    else if (recent.length === 3 && recent.every(Boolean)) setLevel("Sulit");
   }, [attemptsState.data]);
   const submitAnswer = async (value) => {
     if (!value || result || !question) return;
-    const correct = normalizedAnswer(value) === normalizedAnswer(question.answer);
     setSaving(true); setError("");
     try {
-      await saveAttempt(user.id, question.id, value, correct);
+      const attempt = await saveAttempt(question.id, value);
+      const correct = attempt.is_correct;
       setAnswer(value);
-      setResult({ correct, explanation: question.explanation });
+      setResult({ correct, explanation: attempt.explanation });
       const nextStreak = correct ? sessionScore.streak + 1 : 0;
       const rawWrongStreak = correct ? 0 : sessionScore.wrongStreak + 1;
       const shouldReduceDifficulty = rawWrongStreak >= 2;

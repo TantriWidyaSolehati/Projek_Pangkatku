@@ -8,12 +8,12 @@ import { Notice, PageIntro, useRemote } from "./shared.jsx";
 export function ProfilePage() {
   const { user, profile } = useAuth();
   const progressState = useRemote(() => listProgress(user.id), [user.id]);
-  const attemptsState = useRemote(() => listAttempts(user.id), [user.id]);
+  const attemptsState = useRemote(() => listAttempts(), [user.id]);
   const reflectionsState = useRemote(() => listReflections(user.id), [user.id]);
   const progress = progressState.data ?? [];
   const completedLessons = progress.filter((item) => item.completion_status === "completed");
   const attemptList = attemptsState.data ?? [];
-  const accuracy = attemptList.length ? Math.round(attemptList.filter((item) => item.score > 0).length / attemptList.length * 100) : 0;
+  const accuracy = attemptList.length ? Math.round(attemptList.filter((item) => item.is_correct === true).length / attemptList.length * 100) : 0;
   return (
     <motion.div className="page-stack" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <PageIntro eyebrow="PROFIL SISWA" title="Perjalanan belajarmu" description="Lihat progres, latihan, dan refleksi yang sudah kamu kumpulkan." icon={UserRound} />

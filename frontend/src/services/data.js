@@ -37,21 +37,33 @@ export async function saveProgress(userId, lessonId, completed) {
   if (error) throwLearningProgressError(error);
 }
 
-export async function listAttempts(userId) {
+export async function listAttempts() {
   const client = requireSupabase();
   const { data, error } = await client.from("exercise_attempts")
-    .select("id, exercise_id, submitted_answer, score, created_at")
-    .eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
+    .select("id, exercise_id, user_answer, is_correct, created_at")
+    .order("created_at", { ascending: false }).limit(50);
   if (error) throw error;
   return data ?? [];
 }
 
-export async function saveAttempt(userId, exerciseId, answer, correct) {
+export async function saveAttempt(exerciseId, answer) {
   const client = requireSupabase();
-  const { error } = await client.from("exercise_attempts").insert({
-    user_id: userId, exercise_id: exerciseId, submitted_answer: answer, score: correct ? 1 : 0,
+  const { data, error } = await client.rpc("check_exercise_answer", {
+    p_exercise_id: exerciseId,
+    p_user_answer: answer,
   });
   if (error) throw error;
+
+  if (!data || typeof data !== "object") {
+    throw new Error("Respons pemeriksaan jawaban dari Supabase tidak valid.");
+  }
+  if (data.success !== true) {
+    throw new Error(data.message || "Supabase tidak berhasil memeriksa jawaban.");
+  }
+  if (typeof data.is_correct !== "boolean" || typeof data.explanation !== "string") {
+    throw new Error("Respons pemeriksaan jawaban dari Supabase tidak memiliki hasil yang valid.");
+  }
+  return { is_correct: data.is_correct, explanation: data.explanation };
 }
 
 export async function listReflections(userId) {
