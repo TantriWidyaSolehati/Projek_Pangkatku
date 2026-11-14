@@ -171,7 +171,7 @@ export function TutorPage() {
     if (!conversationId) { setMessages([]); return; }
     if (!window.confirm("Hapus percakapan ini secara permanen?")) return;
     try {
-      await deleteConversation(conversationId);
+      await deleteConversation(user.id, conversationId);
       setConversationId(""); setMessages([]); await conversationsState.refresh();
     } catch (err) { setError(err.message); }
   }

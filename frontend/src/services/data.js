@@ -37,10 +37,37 @@ export async function saveProgress(userId, lessonId, completed) {
   if (error) throwLearningProgressError(error);
 }
 
-export async function listAttempts() {
+export async function listExercises() {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc("get_exercises");
+  if (error) throw error;
+  if (!Array.isArray(data)) {
+    throw new Error("Respons daftar soal dari Supabase tidak valid.");
+  }
+  return data.map((exercise) => {
+    if (
+      !exercise || typeof exercise.id !== "string" ||
+      typeof exercise.question !== "string" ||
+      !["Mudah", "Sedang", "Sulit"].includes(exercise.difficulty) ||
+      !Array.isArray(exercise.choices) || !exercise.choices.every((choice) => typeof choice === "string") ||
+      !Array.isArray(exercise.hints) || !exercise.hints.every((hint) => typeof hint === "string")
+    ) {
+      throw new Error("Data soal dari Supabase tidak sesuai format yang diharapkan.");
+    }
+    return {
+      id: exercise.id,
+      prompt: exercise.question,
+      level: exercise.difficulty,
+      choices: exercise.choices,
+      hints: exercise.hints,
+    };
+  });
+}
+
+export async function listAttempts(userId) {
   const client = requireSupabase();
   const { data, error } = await client.from("exercise_attempts")
-    .select("id, exercise_id, user_answer, is_correct, created_at")
+    .select("id, exercise_id, user_answer, is_correct, created_at").eq("user_id", userId)
     .order("created_at", { ascending: false }).limit(50);
   if (error) throw error;
   return data ?? [];
@@ -69,15 +96,34 @@ export async function saveAttempt(exerciseId, answer) {
 export async function listReflections(userId) {
   const client = requireSupabase();
   const { data, error } = await client.from("reflections")
-    .select("id, question, answer, created_at").eq("user_id", userId)
+    .select("id, reflection_text, created_at").eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map((reflection) => {
+    const prefix = "Pangkatku-Reflection-v1\n";
+    if (reflection.reflection_text.startsWith(prefix)) {
+      let parsed;
+      try {
+        parsed = JSON.parse(reflection.reflection_text.slice(prefix.length));
+      } catch {
+        throw new Error(`Data refleksi ${reflection.id} tidak dapat dibaca.`);
+      }
+      if (typeof parsed?.question !== "string" || typeof parsed?.answer !== "string") {
+        throw new Error(`Data refleksi ${reflection.id} tidak sesuai format.`);
+      }
+      return { ...reflection, question: parsed.question, answer: parsed.answer };
+    }
+    return { ...reflection, question: "", answer: reflection.reflection_text };
+  });
 }
 
 export async function saveReflection(userId, question, answer) {
   const client = requireSupabase();
-  const { error } = await client.from("reflections").insert({ user_id: userId, question, answer });
+  const reflectionText = `Pangkatku-Reflection-v1\n${JSON.stringify({ question, answer })}`;
+  const { error } = await client.from("reflections").insert({
+    user_id: userId,
+    reflection_text: reflectionText,
+  });
   if (error) throw error;
 }
 
@@ -152,8 +198,9 @@ export async function saveAiMessage(conversationId, role, content) {
   if (error) throw error;
 }
 
-export async function deleteConversation(conversationId) {
+export async function deleteConversation(userId, conversationId) {
   const client = requireSupabase();
-  const { error } = await client.from("ai_conversations").delete().eq("id", conversationId);
+  const { error } = await client.from("ai_conversations").delete()
+    .eq("id", conversationId).eq("user_id", userId);
   if (error) throw error;
 }

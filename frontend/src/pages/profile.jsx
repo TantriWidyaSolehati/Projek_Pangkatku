@@ -8,7 +8,7 @@ import { Notice, PageIntro, useRemote } from "./shared.jsx";
 export function ProfilePage() {
   const { user, profile } = useAuth();
   const progressState = useRemote(() => listProgress(user.id), [user.id]);
-  const attemptsState = useRemote(() => listAttempts(), [user.id]);
+  const attemptsState = useRemote(() => listAttempts(user.id), [user.id]);
   const reflectionsState = useRemote(() => listReflections(user.id), [user.id]);
   const progress = progressState.data ?? [];
   const completedLessons = progress.filter((item) => item.completion_status === "completed");

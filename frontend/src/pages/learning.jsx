@@ -15,7 +15,7 @@ import { Notice, PageIntro, useRemote } from "./shared.jsx";
 export function DashboardPage() {
   const { user, profile } = useAuth();
   const progressState = useRemote(() => listProgress(user.id), [user.id]);
-  const attemptState = useRemote(() => listAttempts(), [user.id]);
+  const attemptState = useRemote(() => listAttempts(user.id), [user.id]);
   const progress = progressState.data ?? [];
   const attempts = attemptState.data ?? [];
   const completed = progress.filter((item) => item.completion_status === "completed").length;

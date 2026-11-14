@@ -241,11 +241,9 @@ drop policy if exists "Authenticated users can read lessons" on public.lessons;
 create policy "Authenticated users can read lessons" on public.lessons
   for select to authenticated using (true);
 drop policy if exists "Authenticated users can read exercise prompts" on public.exercises;
-create policy "Authenticated users can read exercise prompts" on public.exercises
-  for select to authenticated using (true);
 revoke all on public.lessons, public.exercises from anon, authenticated;
 grant select on public.lessons to authenticated;
-grant select (id, question, question_type, difficulty, explanation) on public.exercises to authenticated;
+revoke insert on public.exercise_attempts from authenticated;
 
 drop policy if exists "Users can view their learning progress" on public.learning_progress;
 create policy "Users can view their learning progress" on public.learning_progress
@@ -261,8 +259,6 @@ drop policy if exists "Users can view their exercise attempts" on public.exercis
 create policy "Users can view their exercise attempts" on public.exercise_attempts
   for select to authenticated using (auth.uid() = user_id);
 drop policy if exists "Users can create their exercise attempts" on public.exercise_attempts;
-create policy "Users can create their exercise attempts" on public.exercise_attempts
-  for insert to authenticated with check (auth.uid() = user_id);
 
 drop policy if exists "Users can view their reflections" on public.reflections;
 create policy "Users can view their reflections" on public.reflections
@@ -339,7 +335,7 @@ create policy "Users can create messages in their conversations" on public.ai_me
   );
 
 grant select, insert, update on public.learning_progress to authenticated;
-grant select, insert on public.exercise_attempts to authenticated;
+grant select on public.exercise_attempts to authenticated;
 grant select, insert, delete on public.reflections to authenticated;
 grant select, insert, update, delete on public.discussions to authenticated;
 grant select, insert, delete on public.discussion_comments to authenticated;
