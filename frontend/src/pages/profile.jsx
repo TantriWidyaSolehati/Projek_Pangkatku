@@ -1,19 +1,11 @@
 import { motion } from "framer-motion";
 import { BookOpen, Check, Sparkles, Target, UserRound } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import { listAttempts, listProgress, listReflections } from "../services/data.js";
+import { hasValidEssayScore, listAttempts, listProgress, listReflections } from "../services/data.js";
 import { lessons, prerequisiteLessons } from "../data/curriculum.js";
 import { Notice, PageIntro, useRemote } from "./shared.jsx";
 
 const essayExerciseIds = new Set(["q1", "q2", "q3", "q4"]);
-
-function hasValidEssayScore(attempt) {
-  return Number.isFinite(attempt.score) &&
-    Number.isFinite(attempt.max_score) &&
-    attempt.score >= 0 &&
-    attempt.max_score === 6 &&
-    attempt.score <= 6;
-}
 
 export function ProfilePage() {
   const { user, profile } = useAuth();

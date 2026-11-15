@@ -7,7 +7,7 @@ import {
   Sparkles, Target, Trophy, X, ArrowUpRight,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import { listAttempts, listProgress, saveProgress } from "../services/data.js";
+import { hasValidEssayScore, listAttempts, listProgress, saveProgress } from "../services/data.js";
 import { lessons, normalizedAnswer, prerequisiteLessons } from "../data/curriculum.js";
 import MathFormula from "../components/MathFormula.jsx";
 import { Notice, PageIntro, useRemote } from "./shared.jsx";
@@ -15,13 +15,7 @@ import { Notice, PageIntro, useRemote } from "./shared.jsx";
 const essayExerciseIds = new Set(["q1", "q2", "q3", "q4"]);
 
 function getEssayScoreLabel(attempt) {
-  if (
-    Number.isFinite(attempt.score) &&
-    Number.isFinite(attempt.max_score) &&
-    attempt.score >= 0 &&
-    attempt.max_score > 0 &&
-    attempt.score <= attempt.max_score
-  ) {
+  if (hasValidEssayScore(attempt)) {
     return `${attempt.score}/${attempt.max_score}`;
   }
   return "Skor belum tersedia";

@@ -14,6 +14,40 @@ function requireSupabase() {
   return supabase;
 }
 
+export function hasValidEssayScore(attempt) {
+  return Boolean(attempt) &&
+    Number.isFinite(attempt.score) &&
+    Number.isFinite(attempt.max_score) &&
+    attempt.score >= 0 &&
+    attempt.score <= 6 &&
+    attempt.max_score === 6;
+}
+
+function getRubricResultTotals(rubricResults) {
+  if (!Array.isArray(rubricResults)) return null;
+
+  let totalEarned = 0;
+  let totalMaxScore = 0;
+  for (const result of rubricResults) {
+    if (
+      !result || typeof result !== "object" || Array.isArray(result) ||
+      typeof result.stage_id !== "string" ||
+      typeof result.criterion !== "string" ||
+      typeof result.checked !== "boolean" ||
+      !Number.isFinite(result.earned) ||
+      result.earned < 0 ||
+      !Number.isFinite(result.max_score) ||
+      result.max_score < 0 ||
+      result.earned > result.max_score
+    ) {
+      return null;
+    }
+    totalEarned += result.earned;
+    totalMaxScore += result.max_score;
+  }
+  return { totalEarned, totalMaxScore };
+}
+
 function isMissingRpcError(error) {
   if (!error) return false;
   const code = String(error.code ?? "").toLowerCase();
@@ -106,6 +140,29 @@ export async function listEssayExercises() {
   return data;
 }
 
+function hasValidEssayRubric(rubric) {
+  if (!Array.isArray(rubric) || rubric.length === 0) return false;
+
+  const stageIds = new Set();
+  let totalWeight = 0;
+  for (const stage of rubric) {
+    const trimmedId = typeof stage?.id === "string" ? stage.id.trim() : "";
+    if (
+      !stage || typeof stage !== "object" || Array.isArray(stage) ||
+      typeof stage.id !== "string" || trimmedId.length === 0 ||
+      typeof stage.label !== "string" || stage.label.trim().length === 0 ||
+      !Number.isFinite(stage.weight) ||
+      stage.weight <= 0 ||
+      stageIds.has(trimmedId)
+    ) {
+      return false;
+    }
+    stageIds.add(trimmedId);
+    totalWeight += stage.weight;
+  }
+  return totalWeight === 6;
+}
+
 export async function getEssaySolution(exerciseId) {
   const client = requireSupabase();
   const { data, error } = await client.rpc("get_essay_solution", {
@@ -122,6 +179,9 @@ export async function getEssaySolution(exerciseId) {
     !Object.hasOwn(solution, "rubric")
   ) {
     throw new Error("Respons pembahasan essay dari Supabase tidak memiliki solution_steps dan rubric yang valid.");
+  }
+  if (!hasValidEssayRubric(solution.rubric)) {
+    throw new Error("Respons rubric essay dari Supabase tidak valid: setiap ID harus unik, ID dan label tidak boleh kosong, bobot harus finite dan positif, serta total bobot harus 6.");
   }
   return {
     solution_steps: solution.solution_steps,
@@ -146,13 +206,21 @@ export async function saveEssaySelfAssessment(exerciseId, userAnswer, checkedSta
   }
 
   const result = Array.isArray(data) && data.length === 1 ? data[0] : data;
-  if (
-    !result || typeof result !== "object" ||
-    typeof result.score !== "number" ||
-    typeof result.max_score !== "number" ||
-    !Object.hasOwn(result, "rubric_results")
-  ) {
-    throw new Error("Respons penilaian essay dari Supabase tidak memiliki score, max_score, dan rubric_results yang valid.");
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    throw new Error("Respons penilaian essay dari Supabase kosong atau bukan objek hasil yang valid.");
+  }
+  if (!hasValidEssayScore(result)) {
+    throw new Error("Respons penilaian essay dari Supabase tidak valid: score harus finite antara 0 sampai 6 dan max_score harus tepat 6.");
+  }
+  const rubricTotals = getRubricResultTotals(result.rubric_results);
+  if (!rubricTotals) {
+    throw new Error("Respons penilaian essay dari Supabase tidak valid: rubric_results harus berupa array tahap rubric dengan struktur dan nilai yang valid.");
+  }
+  if (rubricTotals.totalEarned !== result.score) {
+    throw new Error("Respons penilaian essay dari Supabase tidak konsisten: total earned rubric_results harus sama dengan score.");
+  }
+  if (rubricTotals.totalMaxScore !== result.max_score) {
+    throw new Error("Respons penilaian essay dari Supabase tidak konsisten: total max_score rubric_results harus sama dengan max_score RPC (6).");
   }
   return result;
 }
