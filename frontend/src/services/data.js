@@ -94,17 +94,79 @@ export async function listExercises() {
   }
 }
 
+export async function listEssayExercises() {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc("get_essay_exercises");
+  if (error) {
+    throw new Error(`Gagal memuat soal essay dari Supabase: ${error.message}`);
+  }
+  if (!Array.isArray(data)) {
+    throw new Error("Respons daftar soal essay dari Supabase tidak valid.");
+  }
+  return data;
+}
+
+export async function getEssaySolution(exerciseId) {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc("get_essay_solution", {
+    p_exercise_id: exerciseId,
+  });
+  if (error) {
+    throw new Error(`Gagal memuat pembahasan essay dari Supabase: ${error.message}`);
+  }
+
+  const solution = Array.isArray(data) && data.length === 1 ? data[0] : data;
+  if (
+    !solution || typeof solution !== "object" ||
+    !Object.hasOwn(solution, "solution_steps") ||
+    !Object.hasOwn(solution, "rubric")
+  ) {
+    throw new Error("Respons pembahasan essay dari Supabase tidak memiliki solution_steps dan rubric yang valid.");
+  }
+  return {
+    solution_steps: solution.solution_steps,
+    rubric: solution.rubric,
+  };
+}
+
+export async function saveEssaySelfAssessment(exerciseId, userAnswer, checkedStageIds) {
+  if (typeof exerciseId !== "string" || typeof userAnswer !== "string" ||
+      !Array.isArray(checkedStageIds) || !checkedStageIds.every((stageId) => typeof stageId === "string")) {
+    throw new Error("Data penilaian mandiri essay tidak valid.");
+  }
+
+  const client = requireSupabase();
+  const { data, error } = await client.rpc("save_essay_self_assessment", {
+    p_exercise_id: exerciseId,
+    p_user_answer: userAnswer,
+    p_checked_stage_ids: checkedStageIds,
+  });
+  if (error) {
+    throw new Error(`Gagal menyimpan penilaian mandiri essay ke Supabase: ${error.message}`);
+  }
+
+  const result = Array.isArray(data) && data.length === 1 ? data[0] : data;
+  if (
+    !result || typeof result !== "object" ||
+    typeof result.score !== "number" ||
+    typeof result.max_score !== "number" ||
+    !Object.hasOwn(result, "rubric_results")
+  ) {
+    throw new Error("Respons penilaian essay dari Supabase tidak memiliki score, max_score, dan rubric_results yang valid.");
+  }
+  return result;
+}
+
 export async function listAttempts(userId) {
   if (!supabase) return [];
   const client = requireSupabase();
   const { data, error } = await client.from("exercise_attempts")
-    .select("id, exercise_id, submitted_answer, score, created_at").eq("user_id", userId)
+    .select("id, exercise_id, user_answer, is_correct, score, max_score, rubric_results, created_at").eq("user_id", userId)
     .order("created_at", { ascending: false }).limit(50);
   if (error) throw error;
   return (data ?? []).map((attempt) => ({
     ...attempt,
-    user_answer: attempt.submitted_answer,
-    is_correct: attempt.score === 1,
+    submitted_answer: attempt.user_answer,
   }));
 }
 
