@@ -89,6 +89,67 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.create_profile_for_new_user();
 
+create or replace function public.get_exercises()
+returns table (
+  id text,
+  question text,
+  difficulty text,
+  choices text[],
+  hints text[]
+)
+language sql
+security definer
+set search_path = ''
+as $$
+  select
+    e.id,
+    e.question,
+    e.difficulty,
+    e.choices,
+    coalesce(e.hints, array[]::text[]) as hints
+  from public.exercises e
+  order by e.id;
+$$;
+
+create or replace function public.check_exercise_answer(p_exercise_id text, p_user_answer text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_exercise record;
+  v_is_correct boolean;
+begin
+  if auth.uid() is null then
+    raise exception 'Harus login untuk mengirim jawaban latihan.';
+  end if;
+
+  select * into v_exercise
+  from public.exercises
+  where id = p_exercise_id;
+
+  if not found then
+    return jsonb_build_object('success', false, 'message', 'Soal latihan tidak ditemukan.');
+  end if;
+
+  v_is_correct := lower(trim(p_user_answer)) = lower(trim(v_exercise.correct_answer));
+
+  insert into public.exercise_attempts (user_id, exercise_id, submitted_answer, score)
+  values (auth.uid(), p_exercise_id, p_user_answer, case when v_is_correct then 1 else 0 end);
+
+  return jsonb_build_object(
+    'success', true,
+    'is_correct', v_is_correct,
+    'explanation', v_exercise.explanation,
+    'message', case when v_is_correct then 'Jawaban benar.' else 'Jawaban belum benar. Periksa kembali langkahnya.' end
+  );
+end;
+$$;
+
+grant execute on function public.get_exercises() to authenticated, anon;
+grant execute on function public.check_exercise_answer(text, text) to authenticated, anon;
+
 create table if not exists public.lessons (
   id text primary key,
   title text not null,
@@ -113,6 +174,8 @@ create table if not exists public.exercises (
   question text not null,
   question_type text not null check (question_type in ('multiple_choice', 'short_answer')),
   difficulty text not null check (difficulty in ('Mudah', 'Sedang', 'Sulit')),
+  choices text[] not null check (array_length(choices, 1) >= 2),
+  hints text[] not null default '{}'::text[],
   correct_answer text not null,
   explanation text not null
 );
@@ -198,18 +261,15 @@ on conflict (id) do update set
   title = excluded.title, description = excluded.description,
   content = excluded.content, order_number = excluded.order_number;
 
-insert into public.exercises (id, question, question_type, difficulty, correct_answer, explanation) values
-  ('q1', 'Pada bentuk 7⁴, berapakah bilangan pokoknya?', 'multiple_choice', 'Mudah', '7', 'Pada 7⁴, 7 adalah bilangan pokok dan 4 adalah pangkat.'),
-  ('q2', 'Hitung nilai 2³.', 'multiple_choice', 'Mudah', '8', '2³ = 2 × 2 × 2 = 8.'),
-  ('q3', 'Bentuk pecahan dari 3⁻² adalah …', 'multiple_choice', 'Mudah', '1/9', '3⁻² = 1/3² = 1/9. Hasilnya bukan negatif.'),
-  ('q4', 'Sederhanakan 5² × 5³.', 'multiple_choice', 'Sedang', '5⁵', '5² × 5³ = 5²⁺³ = 5⁵.'),
-  ('q5', 'Sederhanakan 2⁴ ÷ 2⁶.', 'multiple_choice', 'Sedang', '2⁻²', '2⁴ ÷ 2⁶ = 2⁴⁻⁶ = 2⁻² = 1/4.'),
-  ('q6', 'Hitung (3²)³.', 'multiple_choice', 'Sedang', '3⁶', '(3²)³ = 3²×³ = 3⁶ = 729.'),
-  ('q7', 'Sederhanakan 2⁻³ × 2⁵.', 'multiple_choice', 'Sulit', '2²', '2⁻³ × 2⁵ = 2⁻³⁺⁵ = 2² = 4.'),
-  ('q8', 'Bakteri membelah dua setiap jam. Berapa jumlah setelah 5 jam dari 1 bakteri?', 'multiple_choice', 'Sulit', '2⁵ = 32', 'Setelah 5 jam ada 1 × 2⁵ = 32 bakteri.')
+insert into public.exercises (id, question, question_type, difficulty, choices, hints, correct_answer, explanation) values
+  ('q1', 'Sebuah laboratorium meneliti dua jenis bakteri, yaitu Bakteri P dan Bakteri Q. Bakteri P membelah diri menjadi 2 kali lipat setiap 1 jam. Bakteri Q membelah diri menjadi 3 kali lipat setiap 2 jam. Pada awal pengamatan, jumlah keduanya sama, yaitu 1.000 sel. Setelah 4 jam, bakteri manakah yang lebih banyak?', 'multiple_choice', 'Sedang', array['Bakteri Q, karena 1.000 × 3² = 9.000 lebih besar dari 1.000 × 2⁴ = 16.000.', 'Bakteri P, karena 1.000 × 2⁴ = 16.000 dan 1.000 × 3² = 9.000.', 'Keduanya sama, karena sama-sama dimulai dari 1.000 sel.', 'Tidak dapat ditentukan tanpa data jam ke-0.'], array['Bakteri P tumbuh dengan faktor 2 setiap 1 jam, jadi setelah 4 jam ia membelah 4 kali.', 'Bakteri Q tumbuh dengan faktor 3 setiap 2 jam, jadi dalam 4 jam ada 2 siklus pembelahan.', 'Hitung hasilnya: 1.000 × 2⁴ = 16.000 dan 1.000 × 3² = 9.000.', 'Karena 16.000 > 9.000, Bakteri P lebih banyak setelah 4 jam.'], 'Bakteri P, karena 1.000 × 2⁴ = 16.000 dan 1.000 × 3² = 9.000.', 'Bakteri P lebih banyak karena 1.000 × 2⁴ = 16.000 sel, sedangkan Bakteri Q = 1.000 × 3² = 9.000 sel. Jadi, 16.000 > 9.000 dan Bakteri P unggul.'),
+  ('q2', 'Sebuah startup mencatat jumlah pengguna aktif bulanan pada bulan pertama sebanyak 500 orang. Setiap bulan, jumlah pengguna meningkat menjadi 4 kali lipat dari bulan sebelumnya. Berapa jumlah pengguna pada bulan ke-4?', 'multiple_choice', 'Mudah', array['500 × 4³ = 32.000', '500 × 4² = 8.000', '500 × 4⁴ = 128.000', '500 × 3⁴ = 40.500'], array['Nilai awal adalah 500, rasio pengali adalah 4, dan n = 4.', 'Bentuk pola bulan ke-4 adalah 500 × 4³.', '4³ = 64 dan 500 × 64 = 32.000.', 'Jadi jumlah pengguna pada bulan ke-4 adalah 32.000 orang.'], '500 × 4³ = 32.000', 'Model matematika yang tepat adalah Uₙ = 500 × 4⁽ⁿ⁻¹⁾. Untuk bulan ke-4, U₄ = 500 × 4³ = 500 × 64 = 32.000 orang.'),
+  ('q3', 'Sebuah kotak penyimpanan berbentuk kubus memiliki panjang sisi 3 × 10² milimeter. Berapa volume kotak tersebut dalam bentuk bilangan berpangkat dan bentuk biasa?', 'multiple_choice', 'Sedang', array['V = (3 × 10²)³ = 27 × 10⁶ = 27.000.000 mm³', 'V = 3 × 10² = 300 mm³', 'V = 3³ × 10² = 27 × 100 = 2.700 mm³', 'V = (3 × 10²)² = 9 × 10⁴ = 90.000 mm³'], array['Rumus volume kubus adalah V = s × s × s = s³.', 'Substitusikan s = 3 × 10², sehingga V = (3 × 10²)³.', 'Gunakan sifat (a × b)ⁿ = aⁿ × bⁿ, maka V = 3³ × (10²)³ = 27 × 10⁶.', 'Ubah ke bentuk biasa: 27 × 1.000.000 = 27.000.000 mm³.'], 'V = (3 × 10²)³ = 27 × 10⁶ = 27.000.000 mm³', 'Volume kubus adalah V = s³ = (3 × 10²)³ = 3³ × (10²)³ = 27 × 10⁶ = 27.000.000 mm³.'),
+  ('q4', 'Sebuah zat radioaktif bermassa awal 1.000 gram mengalami peluruhan sehingga massanya menjadi setengah dari massa sebelumnya setiap 3 hari. Jika setelah 9 hari, seorang siswa menyimpulkan bahwa massa zat tersisa adalah 333,33 gram, apakah kesimpulan tersebut benar?', 'multiple_choice', 'Sulit', array['Tidak benar. Massa yang sebenarnya adalah 1.000 × (1/2)³ = 125 gram.', 'Benar, karena 1.000 dibagi 3 periode sama dengan 333,33 gram.', 'Tidak benar. Massa yang sebenarnya adalah 1.000 × (1/2)² = 250 gram.', 'Benar, karena peluruhan dilakukan secara proporsional dengan 3 periode.'], array['9 hari dibagi 3 hari per periode sama dengan 3 periode.', 'Persamaan peluruhan adalah M = 1.000 × (1/2)ᵗ, dengan t = 3.', 'M = 1.000 × (1/2)³ = 1.000 × 1/8 = 125.', 'Kesimpulan 333,33 gram salah karena peluruhan dilakukan secara berulang bukan linear.'], 'Tidak benar. Massa yang sebenarnya adalah 1.000 × (1/2)³ = 125 gram.', 'Kesimpulan siswa tidak benar. Peluruhan mengikuti pola eksponensial, bukan pembagian linear. Setelah 3 periode, massa = 1.000 × (1/2)³ = 125 gram.')
 on conflict (id) do update set
   question = excluded.question, question_type = excluded.question_type,
-  difficulty = excluded.difficulty, correct_answer = excluded.correct_answer,
+  difficulty = excluded.difficulty, choices = excluded.choices,
+  hints = excluded.hints, correct_answer = excluded.correct_answer,
   explanation = excluded.explanation;
 
 alter table public.profiles enable row level security;

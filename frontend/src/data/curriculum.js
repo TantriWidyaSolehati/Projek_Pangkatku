@@ -87,14 +87,86 @@ export const lessons = [
 ];
 
 export const exercises = [
-  { id: "q1", level: "Mudah", prompt: "Pada bentuk 7⁴, berapakah bilangan pokoknya?", choices: ["4", "7", "28", "11"], answer: "7", hint: "Bilangan pokok adalah angka yang menjadi faktor berulang.", hints: ["Perhatikan angka biasa dan angka kecil di atasnya.", "Bilangan pokok adalah angka yang menjadi faktor berulang.", "Pada 7⁴, angka 7 dikalikan berulang sebanyak empat kali.", "Jadi bilangan pokoknya adalah angka 7."], explanation: "Pada 7⁴, 7 adalah bilangan pokok dan 4 adalah pangkat." },
-  { id: "q2", level: "Mudah", prompt: "Hitung nilai 2³.", choices: ["6", "8", "9", "16"], answer: "8", hint: "Tuliskan 2³ sebagai perkalian berulang.", hints: ["Pangkat menunjukkan banyaknya faktor yang sama.", "Tuliskan 2³ sebagai perkalian berulang.", "2³ = 2 × 2 × 2. Kalikan dua faktor pertama dulu.", "2 × 2 × 2 = 4 × 2 = 8."], explanation: "2³ = 2 × 2 × 2 = 8." },
-  { id: "q3", level: "Mudah", prompt: "Bentuk pecahan dari 3⁻² adalah …", choices: ["−9", "1/6", "1/9", "9"], answer: "1/9", hint: "Pangkat negatif menunjukkan kebalikan: a⁻ⁿ = 1/aⁿ.", hints: ["Pangkat negatif tidak berarti hasilnya negatif.", "Gunakan aturan a⁻ⁿ = 1/aⁿ.", "Ubah menjadi 1/3², lalu hitung penyebutnya.", "3² = 9, sehingga pecahannya 1/9."], explanation: "3⁻² = 1/3² = 1/9. Hasilnya bukan negatif." },
-  { id: "q4", level: "Sedang", prompt: "Sederhanakan 5² × 5³.", choices: ["5⁵", "5⁶", "25⁶", "10⁵"], answer: "5⁵", hint: "Untuk perkalian dengan basis sama, pangkatnya dijumlahkan.", hints: ["Kedua bilangan berpangkat memiliki basis yang sama.", "Untuk perkalian dengan basis sama, pangkatnya dijumlahkan.", "Jumlahkan eksponen: 2 + 3.", "Hasilnya adalah 5⁵."], explanation: "5² × 5³ = 5²⁺³ = 5⁵." },
-  { id: "q5", level: "Sedang", prompt: "Sederhanakan 2⁴ ÷ 2⁶.", choices: ["2¹⁰", "2²", "2⁻²", "1"], answer: "2⁻²", hint: "Kurangkan pangkat pembilang dengan pangkat penyebut.", hints: ["Basis pada pembilang dan penyebut sama.", "Kurangkan pangkat pembilang dengan pangkat penyebut.", "Hitung 4 − 6.", "4 − 6 = −2, jadi hasilnya 2⁻²."], explanation: "2⁴ ÷ 2⁶ = 2⁴⁻⁶ = 2⁻² = 1/4." },
-  { id: "q6", level: "Sedang", prompt: "Hitung (3²)³.", choices: ["3⁵", "3⁶", "9⁶", "3⁸"], answer: "3⁶", hint: "Pangkat dari pangkat: kalikan kedua eksponen.", hints: ["Di sini ada pangkat di dalam tanda kurung dan pangkat di luar.", "Untuk pangkat dari pangkat, kedua eksponen dikalikan.", "Hitung 2 × 3 untuk memperoleh eksponen baru.", "Hasilnya 3⁶, yaitu 729."], explanation: "(3²)³ = 3²×³ = 3⁶ = 729." },
-  { id: "q7", level: "Sulit", prompt: "Sederhanakan 2⁻³ × 2⁵.", choices: ["2⁻¹⁵", "2²", "2⁻²", "2⁸"], answer: "2²", hint: "Gabungkan pangkat dengan basis sama, kemudian evaluasi.", hints: ["Perhatikan bahwa kedua suku memiliki basis 2.", "Untuk perkalian dengan basis sama, jumlahkan pangkatnya.", "Hitung −3 + 5.", "−3 + 5 = 2, jadi hasilnya 2² = 4."], explanation: "2⁻³ × 2⁵ = 2⁻³⁺⁵ = 2² = 4." },
-  { id: "q8", level: "Sulit", prompt: "Sebuah bakteri membelah menjadi dua setiap jam. Jika mula-mula 1 bakteri, berapa jumlahnya setelah 5 jam?", choices: ["2⁴ = 16", "2⁵ = 32", "5² = 25", "10"], answer: "2⁵ = 32", hint: "Setiap jam jumlahnya dikali 2. Tuliskan perkalian 2 sebanyak lima faktor.", hints: ["Jumlah bakteri bertambah dengan faktor yang sama setiap jam.", "Setiap jam jumlahnya dikali 2.", "Tuliskan faktor 2 sebanyak lima kali: 2 × 2 × 2 × 2 × 2.", "Perkalian itu adalah 2⁵ = 32 bakteri."], explanation: "Setelah 5 jam ada 1 × 2⁵ = 32 bakteri." },
+  {
+    id: "q1",
+    level: "Sedang",
+    prompt: "Sebuah laboratorium meneliti dua jenis bakteri, yaitu Bakteri P dan Bakteri Q. Bakteri P membelah diri menjadi 2 kali lipat setiap 1 jam. Bakteri Q membelah diri menjadi 3 kali lipat setiap 2 jam. Pada awal pengamatan, jumlah keduanya sama, yaitu 1.000 sel. Setelah 4 jam, bakteri manakah yang lebih banyak?",
+    choices: [
+      "Bakteri Q, karena 1.000 × 3² = 9.000 lebih besar dari 1.000 × 2⁴ = 16.000.",
+      "Bakteri P, karena 1.000 × 2⁴ = 16.000 dan 1.000 × 3² = 9.000.",
+      "Keduanya sama, karena sama-sama dimulai dari 1.000 sel.",
+      "Tidak dapat ditentukan tanpa data jam ke-0.",
+    ],
+    answer: "Bakteri P, karena 1.000 × 2⁴ = 16.000 dan 1.000 × 3² = 9.000.",
+    hint: "Hitung pertumbuhan masing-masing bakteri dalam interval yang sesuai, lalu bandingkan hasilnya.",
+    hints: [
+      "Bakteri P tumbuh dengan faktor 2 setiap 1 jam, jadi setelah 4 jam ia membelah 4 kali.",
+      "Bakteri Q tumbuh dengan faktor 3 setiap 2 jam, jadi dalam 4 jam ada 2 siklus pembelahan.",
+      "Hitung hasilnya: 1.000 × 2⁴ = 16.000 dan 1.000 × 3² = 9.000.",
+      "Karena 16.000 > 9.000, Bakteri P lebih banyak setelah 4 jam.",
+    ],
+    explanation: "Bakteri P lebih banyak karena 1.000 × 2⁴ = 16.000 sel, sedangkan Bakteri Q = 1.000 × 3² = 9.000 sel. Jadi, 16.000 > 9.000 dan Bakteri P unggul.",
+  },
+  {
+    id: "q2",
+    level: "Mudah",
+    prompt: "Sebuah startup mencatat jumlah pengguna aktif bulanan pada bulan pertama sebanyak 500 orang. Setiap bulan, jumlah pengguna meningkat menjadi 4 kali lipat dari bulan sebelumnya. Berapa jumlah pengguna pada bulan ke-4?",
+    choices: [
+      "500 × 4³ = 32.000",
+      "500 × 4² = 8.000",
+      "500 × 4⁴ = 128.000",
+      "500 × 3⁴ = 40.500",
+    ],
+    answer: "500 × 4³ = 32.000",
+    hint: "Model pertumbuhannya adalah Uₙ = 500 × 4⁽ⁿ⁻¹⁾, lalu substitusikan n = 4.",
+    hints: [
+      "Nilai awal adalah 500, rasio pengali adalah 4, dan n = 4.",
+      "Bentuk pola bulan ke-4 adalah 500 × 4³.",
+      "4³ = 64 dan 500 × 64 = 32.000.",
+      "Jadi jumlah pengguna pada bulan ke-4 adalah 32.000 orang.",
+    ],
+    explanation: "Model matematika yang tepat adalah Uₙ = 500 × 4⁽ⁿ⁻¹⁾. Untuk bulan ke-4, U₄ = 500 × 4³ = 500 × 64 = 32.000 orang.",
+  },
+  {
+    id: "q3",
+    level: "Sedang",
+    prompt: "Sebuah kotak penyimpanan berbentuk kubus memiliki panjang sisi 3 × 10² milimeter. Berapa volume kotak tersebut dalam bentuk bilangan berpangkat dan bentuk biasa?",
+    choices: [
+      "V = (3 × 10²)³ = 27 × 10⁶ = 27.000.000 mm³",
+      "V = 3 × 10² = 300 mm³",
+      "V = 3³ × 10² = 27 × 100 = 2.700 mm³",
+      "V = (3 × 10²)² = 9 × 10⁴ = 90.000 mm³",
+    ],
+    answer: "V = (3 × 10²)³ = 27 × 10⁶ = 27.000.000 mm³",
+    hint: "Gunakan rumus volume kubus V = s³ dan sifat eksponen (a × b)ⁿ = aⁿ × bⁿ.",
+    hints: [
+      "Rumus volume kubus adalah V = s × s × s = s³.",
+      "Substitusikan s = 3 × 10², sehingga V = (3 × 10²)³.",
+      "Gunakan sifat (a × b)ⁿ = aⁿ × bⁿ, maka V = 3³ × (10²)³ = 27 × 10⁶.",
+      "Ubah ke bentuk biasa: 27 × 1.000.000 = 27.000.000 mm³.",
+    ],
+    explanation: "Volume kubus adalah V = s³ = (3 × 10²)³ = 3³ × (10²)³ = 27 × 10⁶ = 27.000.000 mm³.",
+  },
+  {
+    id: "q4",
+    level: "Sulit",
+    prompt: "Sebuah zat radioaktif bermassa awal 1.000 gram mengalami peluruhan sehingga massanya menjadi setengah dari massa sebelumnya setiap 3 hari. Jika setelah 9 hari, seorang siswa menyimpulkan bahwa massa zat tersisa adalah 333,33 gram, apakah kesimpulan tersebut benar?",
+    choices: [
+      "Tidak benar. Massa yang sebenarnya adalah 1.000 × (1/2)³ = 125 gram.",
+      "Benar, karena 1.000 dibagi 3 periode sama dengan 333,33 gram.",
+      "Tidak benar. Massa yang sebenarnya adalah 1.000 × (1/2)² = 250 gram.",
+      "Benar, karena peluruhan dilakukan secara proporsional dengan 3 periode.",
+    ],
+    answer: "Tidak benar. Massa yang sebenarnya adalah 1.000 × (1/2)³ = 125 gram.",
+    hint: "Peluruhan mengikuti pemangkatan bukan pembagian linear; hitung 9 hari = 3 periode, lalu kalikan dengan (1/2)³.",
+    hints: [
+      "9 hari dibagi 3 hari per periode sama dengan 3 periode.",
+      "Persamaan peluruhan adalah M = 1.000 × (1/2)ᵗ, dengan t = 3.",
+      "M = 1.000 × (1/2)³ = 1.000 × 1/8 = 125.",
+      "Kesimpulan 333,33 gram salah karena peluruhan dilakukan secara berulang bukan linear.",
+    ],
+    explanation: "Kesimpulan siswa tidak benar. Peluruhan mengikuti pola eksponensial, bukan pembagian linear. Setelah 3 periode, massa = 1.000 × (1/2)³ = 125 gram.",
+  },
 ];
 
 export const reflectionQuestions = [

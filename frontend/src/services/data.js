@@ -1,8 +1,24 @@
 import { supabase } from "../lib/supabase.js";
+import { exercises as fallbackExercises, normalizedAnswer } from "../data/curriculum.js";
+
+const fallbackExerciseList = fallbackExercises.map((exercise) => ({
+  id: exercise.id,
+  prompt: exercise.prompt,
+  level: exercise.level,
+  choices: exercise.choices,
+  hints: exercise.hints ?? [exercise.hint],
+}));
 
 function requireSupabase() {
   if (!supabase) throw new Error("Fitur ini perlu koneksi Supabase. Lengkapi frontend/.env.local dan jalankan migrasi database.");
   return supabase;
+}
+
+function isMissingRpcError(error) {
+  if (!error) return false;
+  const code = String(error.code ?? "").toLowerCase();
+  const message = String(error.message ?? "").toLowerCase();
+  return ["pgrst301", "42883", "42p01", "23503"].includes(code) || message.includes("function") || message.includes("does not exist") || message.includes("not found");
 }
 
 function throwLearningProgressError(error) {
@@ -14,6 +30,10 @@ function throwLearningProgressError(error) {
     );
   }
   throw error;
+}
+
+function fallbackExerciseById(exerciseId) {
+  return fallbackExercises.find((exercise) => exercise.id === exerciseId) ?? null;
 }
 
 export async function listProgress(userId) {
@@ -38,59 +58,97 @@ export async function saveProgress(userId, lessonId, completed) {
 }
 
 export async function listExercises() {
-  const client = requireSupabase();
-  const { data, error } = await client.rpc("get_exercises");
-  if (error) throw error;
-  if (!Array.isArray(data)) {
-    throw new Error("Respons daftar soal dari Supabase tidak valid.");
-  }
-  return data.map((exercise) => {
-    if (
-      !exercise || typeof exercise.id !== "string" ||
-      typeof exercise.question !== "string" ||
-      !["Mudah", "Sedang", "Sulit"].includes(exercise.difficulty) ||
-      !Array.isArray(exercise.choices) || !exercise.choices.every((choice) => typeof choice === "string") ||
-      !Array.isArray(exercise.hints) || !exercise.hints.every((hint) => typeof hint === "string")
-    ) {
-      throw new Error("Data soal dari Supabase tidak sesuai format yang diharapkan.");
+  if (!supabase) return fallbackExerciseList;
+
+  try {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc("get_exercises");
+    if (error) {
+      if (isMissingRpcError(error)) return fallbackExerciseList;
+      throw error;
     }
-    return {
-      id: exercise.id,
-      prompt: exercise.question,
-      level: exercise.difficulty,
-      choices: exercise.choices,
-      hints: exercise.hints,
-    };
-  });
+    if (!Array.isArray(data)) {
+      throw new Error("Respons daftar soal dari Supabase tidak valid.");
+    }
+    return data.map((exercise) => {
+      if (
+        !exercise || typeof exercise.id !== "string" ||
+        typeof exercise.question !== "string" ||
+        !["Mudah", "Sedang", "Sulit"].includes(exercise.difficulty) ||
+        !Array.isArray(exercise.choices) || !exercise.choices.every((choice) => typeof choice === "string") ||
+        !Array.isArray(exercise.hints) || !exercise.hints.every((hint) => typeof hint === "string")
+      ) {
+        throw new Error("Data soal dari Supabase tidak sesuai format yang diharapkan.");
+      }
+      return {
+        id: exercise.id,
+        prompt: exercise.question,
+        level: exercise.difficulty,
+        choices: exercise.choices,
+        hints: exercise.hints,
+      };
+    });
+  } catch (error) {
+    if (isMissingRpcError(error)) return fallbackExerciseList;
+    throw error;
+  }
 }
 
 export async function listAttempts(userId) {
+  if (!supabase) return [];
   const client = requireSupabase();
   const { data, error } = await client.from("exercise_attempts")
-    .select("id, exercise_id, user_answer, is_correct, created_at").eq("user_id", userId)
+    .select("id, exercise_id, submitted_answer, score, created_at").eq("user_id", userId)
     .order("created_at", { ascending: false }).limit(50);
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map((attempt) => ({
+    ...attempt,
+    user_answer: attempt.submitted_answer,
+    is_correct: attempt.score === 1,
+  }));
 }
 
 export async function saveAttempt(exerciseId, answer) {
-  const client = requireSupabase();
-  const { data, error } = await client.rpc("check_exercise_answer", {
-    p_exercise_id: exerciseId,
-    p_user_answer: answer,
-  });
-  if (error) throw error;
+  if (!supabase) {
+    const exercise = fallbackExerciseById(exerciseId);
+    if (!exercise) throw new Error("Soal latihan tidak ditemukan.");
+    const isCorrect = normalizedAnswer(answer) === normalizedAnswer(exercise.answer);
+    return { is_correct: isCorrect, explanation: exercise.explanation };
+  }
 
-  if (!data || typeof data !== "object") {
-    throw new Error("Respons pemeriksaan jawaban dari Supabase tidak valid.");
+  try {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc("check_exercise_answer", {
+      p_exercise_id: exerciseId,
+      p_user_answer: answer,
+    });
+    if (error) {
+      const exercise = fallbackExerciseById(exerciseId);
+      if (isMissingRpcError(error) && exercise) {
+        const isCorrect = normalizedAnswer(answer) === normalizedAnswer(exercise.answer);
+        return { is_correct: isCorrect, explanation: exercise.explanation };
+      }
+      throw error;
+    }
+
+    if (!data || typeof data !== "object") {
+      throw new Error("Respons pemeriksaan jawaban dari Supabase tidak valid.");
+    }
+    if (data.success !== true) {
+      throw new Error(data.message || "Supabase tidak berhasil memeriksa jawaban.");
+    }
+    if (typeof data.is_correct !== "boolean" || typeof data.explanation !== "string") {
+      throw new Error("Respons pemeriksaan jawaban dari Supabase tidak memiliki hasil yang valid.");
+    }
+    return { is_correct: data.is_correct, explanation: data.explanation };
+  } catch (error) {
+    const exercise = fallbackExerciseById(exerciseId);
+    if (exercise && isMissingRpcError(error)) {
+      const isCorrect = normalizedAnswer(answer) === normalizedAnswer(exercise.answer);
+      return { is_correct: isCorrect, explanation: exercise.explanation };
+    }
+    throw error;
   }
-  if (data.success !== true) {
-    throw new Error(data.message || "Supabase tidak berhasil memeriksa jawaban.");
-  }
-  if (typeof data.is_correct !== "boolean" || typeof data.explanation !== "string") {
-    throw new Error("Respons pemeriksaan jawaban dari Supabase tidak memiliki hasil yang valid.");
-  }
-  return { is_correct: data.is_correct, explanation: data.explanation };
 }
 
 export async function listReflections(userId) {
